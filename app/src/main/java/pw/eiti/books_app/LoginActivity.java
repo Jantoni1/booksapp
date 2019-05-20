@@ -30,20 +30,15 @@ import android.widget.EditText;
 import android.widget.TextView;
 import org.springframework.http.*;
 import org.springframework.http.converter.FormHttpMessageConverter;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJacksonHttpMessageConverter;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import pw.eiti.books_app.client.RestUtils;
-import pw.eiti.books_app.domain.BookDetailsDTO;
-import pw.eiti.books_app.domain.UserCredentialsDTO;
 
 import java.util.*;
 
 import static android.Manifest.permission.READ_CONTACTS;
+import static pw.eiti.books_app.client.RestUtils.SERVICE_URL;
 
 /**
  * A login screen that offers login via email/password.
@@ -163,23 +158,23 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         boolean cancel = false;
         View focusView = null;
 
-        // Check for a valid password, if the user entered one.
-//        if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
-//            mPasswordView.setError(getString(R.string.error_invalid_password));
-//            focusView = mPasswordView;
-//            cancel = true;
-//        }
-//
-//        // Check for a valid email address.
-//        if (TextUtils.isEmpty(email)) {
-//            mEmailView.setError(getString(R.string.error_field_required));
-//            focusView = mEmailView;
-//            cancel = true;
-//        } else if (!isEmailValid(email)) {
-//            mEmailView.setError(getString(R.string.error_invalid_email));
-//            focusView = mEmailView;
-//            cancel = true;
-//        }
+//         Check for a valid password, if the user entered one.
+        if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
+            mPasswordView.setError(getString(R.string.error_invalid_password));
+            focusView = mPasswordView;
+            cancel = true;
+        }
+
+        // Check for a valid email address.
+        if (TextUtils.isEmpty(email)) {
+            mEmailView.setError(getString(R.string.error_field_required));
+            focusView = mEmailView;
+            cancel = true;
+        } else if (!isEmailValid(email)) {
+            mEmailView.setError(getString(R.string.error_invalid_email));
+            focusView = mEmailView;
+            cancel = true;
+        }
 
         if (cancel) {
             // There was an error; don't attempt login and focus the first
@@ -308,48 +303,23 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            final String url = "http://192.168.0.249:8080/login";
-
-            HttpMessageConverter<MultiValueMap<String, ?>> formHttpMessageConverter = new FormHttpMessageConverter();
-
-            HttpMessageConverter<String> stringHttpMessageConverter = new StringHttpMessageConverter();
-
-            List<HttpMessageConverter<?>> messageConverters = new LinkedList<>();
-
-            MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-            // Note: here we are making this converter to process any kind of response,
-            // not only application/*json, which is the default behaviour
-            converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-
-            messageConverters.add(formHttpMessageConverter);
-            messageConverters.add(stringHttpMessageConverter);
-            messageConverters.add(converter);
-            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-            map.add("username", "j.antoniak8@gmail.com");
-            map.add("password", "qwerty");
-
             RestTemplate restTemplate = RestUtils.getRestTemplate();
-
-            restTemplate.setMessageConverters(messageConverters);
 
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(map, requestHeaders);
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(getCredentials(), requestHeaders);
 
-//            ResponseEntity<String> result = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-//            HttpHeaders respHeaders = result.getHeaders();
-//            System.out.println(respHeaders.toString());
+            ResponseEntity<String> result = restTemplate.exchange(SERVICE_URL.concat("/login"), HttpMethod.POST, entity, String.class);
 
-            RestTemplate template = RestUtils.getRestTemplate();
-            template.setMessageConverters(messageConverters);
-            ResponseEntity<BookDetailsDTO> response = template.postForEntity("http://192.168.0.249:8080/dummy", null, BookDetailsDTO.class);
-//            System.out.println(result.getStatusCode());
+            return result.getStatusCode().equals(HttpStatus.OK);
+        }
 
-
-
-            return true;
-
+        private MultiValueMap<String, String> getCredentials() {
+            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+            map.add("username", mEmail);
+            map.add("password", mPassword);
+            return map;
         }
 
         @Override
@@ -372,16 +342,3 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
     }
 }
-
-
-
-//    UserCredentialsDTO cred = new UserCredentialsDTO();
-//    String data = String.format("{username:%s,password:%s}", mEmail, mPassword);
-//            cred.setUsername(mEmail);
-//                    cred.setPassword(mPassword);
-//
-//                    HttpEntity<String> request = new HttpEntity<>();
-//        HttpEntity<String> response = template.exchange(url, HttpMethod.POST, request, String.class);
-//        HttpHeaders headers = response.getHeaders();
-//        String set_cookie = headers.getFirst("Set-Cookie");
-//        return set_cookie != null;
