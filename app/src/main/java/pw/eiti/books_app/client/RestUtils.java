@@ -15,7 +15,7 @@ import java.util.List;
 
 public class RestUtils {
 
-    public static final String SERVICE_URL = "http://192.168.0.249:8080";
+    public static final String SERVICE_URL = "https://wpam-library-backend.herokuapp.com";
 
 
     public static RestTemplate getRestTemplate() {
